@@ -146,6 +146,8 @@ def handle_add(args: List[str]):
     
     try:
         amount = float(args[0])
+        if amount > 0:
+            raise ValueError
     except ValueError:
         return "❌ Ошибка: сумма должна быть числом"
     
