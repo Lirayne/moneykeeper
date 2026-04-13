@@ -146,7 +146,7 @@ def handle_add(args: List[str]):
     
     try:
         amount = float(args[0])
-        if amount > 0:
+        if amount <= 0:
             raise ValueError
     except ValueError:
         return "❌ Ошибка: сумма должна быть числом"
@@ -344,6 +344,9 @@ def process_message(text: str) -> str:
         if len(parts) >= 2:
             try:
                 amount = float(parts[0])
+                if amount <= 0:
+                    raise ValueError
+
                 category = parts[1]
                 description = parts[2] if len(parts) > 2 else ""
                 
