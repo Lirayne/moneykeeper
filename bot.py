@@ -7,6 +7,7 @@ MoneyKeeper Bot - Имитация Telegram-бота для учёта личн�
 """
 
 import json
+import math
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 from collections import defaultdict
@@ -143,11 +144,13 @@ def handle_add(args: List[str]):
     """
     if len(args) < 2:
         return "❌ Ошибка: нужно указать сумму и категорию.\nПример: /add 150 кофе"
-    
+
     try:
-        amount = float(args[0])
+        amount = float(args[0].replace(",", "."))
+        if not math.isfinite(amount):
+            raise ValueError
     except ValueError:
-        return "❌ Ошибка: сумма должна быть числом"
+        return "❌ Ошибка: сумма должна быть корректным числом"
     
     # БАГ #2: Нет проверки на отрицательную сумму
     category = args[1]
