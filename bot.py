@@ -82,10 +82,9 @@ def get_date_range(period: str) -> Tuple[datetime, datetime]:
         start = datetime(now.year, now.month, now.day, 0, 0, 0)
         end = datetime(now.year, now.month, now.day, 23, 59, 59)
     elif period == "week":
-        # БАГ #4: Неправильный расчёт начала недели
         start = now - timedelta(days=now.weekday())
         start = datetime(start.year, start.month, start.day, 0, 0, 0)
-        end = now
+        end = datetime(now.year, now.month, now.day, 23, 59, 59)
     elif period == "month":
         start = datetime(now.year, now.month, 1, 0, 0, 0)
         end = now
@@ -196,10 +195,7 @@ def handle_month():
     БАГ #5: Возвращает данные за прошлый месяц
     """
     now = datetime.now()
-    # БАГ: показывает прошлый месяц
-    first_day_of_month = datetime(now.year, now.month - 1 if now.month > 1 else 12, 1)
-    if now.month == 1:
-        first_day_of_month = datetime(now.year - 1, 12, 1)
+    first_day_of_month = datetime(now.year, now.month, 1, 0, 0, 0)
     
     expenses = db.get_expenses(current_user_id, first_day_of_month, now)
     
@@ -263,12 +259,20 @@ def handle_delete(args: List[str]):
         return f"❌ Расход #{expense_id} не найден"
 
 
-def handle_export():
+def handle_export(args: List[str] = None):
     """
-    Экспорт данных в JSON
-    БАГ #9: Экспортирует всё подряд, без фильтрации
+    Экспорт данных в JSON с фильтрацией по периоду.
     """
-    expenses = db.get_expenses(current_user_id)
+    start_date, end_date = None, None
+    
+    # Проверяем, передал ли пользователь период (today, week, month)
+    if args and len(args) > 0:
+        period = args[0].lower()
+        if period in ["today", "week", "month"]:
+            start_date, end_date = get_date_range(period)
+            
+    # Получаем расходы с учетом фильтров
+    expenses = db.get_expenses(current_user_id, start_date, end_date)
     
     export_data = {
         "user": db.users.get(current_user_id, {}),
@@ -288,8 +292,10 @@ def handle_export():
     json_str = json.dumps(export_data, indent=2, ensure_ascii=False, default=str)
     
     # Имитация файла
-    return f"📄 *Экспорт данных*\n\n```json\n{json_str[:1500]}\n```\n(первые 1500 символов)"
+    period_name = args[0].lower() if args else "всё время"
+    return f"📄 *Экспорт данных ({period_name})*\n\n
 
+def handle_unknown(command: str):
 
 def handle_unknown(command: str):
     """Неизвестная команда"""
