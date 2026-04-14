@@ -298,59 +298,52 @@ def handle_unknown(command: str):
 
 # ===== ОБРАБОТЧИК СООБЩЕНИЙ (как в Telegram) =====
 def process_message(text: str) -> str:
-    """
-    Обрабатывает входящее сообщение и возвращает ответ
-    """
     text = text.strip()
-    
+
     if not text:
         return "❌ Пустое сообщение"
-    
-    # Обработка команд
+
     if text.startswith("/"):
         parts = text.split()
         command = parts[0].lower()
         args = parts[1:]
-        
-        if command == "/start":
-            return handle_start()
-        elif command == "/help":
-            return handle_start()  # /help показывает то же, что /start
-        elif command == "/add":
-            return handle_add(args)
-        elif command == "/today":
-            return handle_today()
-        elif command == "/week":
-            return handle_week()
-        elif command == "/month":
-            return handle_month()
-        elif command == "/categories":
-            return handle_categories()
-        elif command == "/add_category":
-            return handle_add_category(args)
-        elif command == "/delete":
-            return handle_delete(args)
-        elif command == "/export":
-            return handle_export()
+
+        handlers = {
+            "/start": lambda: handle_start(),
+            "/help": lambda: handle_start(),
+            "/add": lambda: handle_add(args),
+            "/today": lambda: handle_today(),
+            "/week": lambda: handle_week(),
+            "/month": lambda: handle_month(),
+            "/categories": lambda: handle_categories(),
+            "/add_category": lambda: handle_add_category(args),
+            "/delete": lambda: handle_delete(args),
+            "/export": lambda: handle_export(),
+        }
+
+        handler = handlers.get(command)
+
+        if handler:
+            return handler()
         else:
             return handle_unknown(command)
+
     else:
-        # Обработка обычного сообщения (быстрое добавление)
-        # БАГ #11: Не проверяет, что первое слово — число
         parts = text.split(maxsplit=2)
-        
-        if len(parts) >= 2:
-            try:
-                amount = float(parts[0])
-                category = parts[1]
-                description = parts[2] if len(parts) > 2 else ""
-                
-                expense_id = db.add_expense(current_user_id, amount, category, description)
-                return f"✅ Добавлено: {format_currency(amount)} на «{category}»\n#{expense_id}"
-            except ValueError:
-                return "❌ Не понял. Используй /add или просто «сумма категория»"
-        else:
-            return "❌ Не понял. Напиши /help для списка команд"
+
+        if len(parts) < 2:
+            return "❌ Не понял. Напиши /help"
+
+        try:
+            amount = float(parts[0])
+            category = parts[1]
+            description = parts[2] if len(parts) > 2 else ""
+
+            expense_id = db.add_expense(current_user_id, amount, category, description)
+            return f"✅ Добавлено: {format_currency(amount)} на «{category}»\n#{expense_id}"
+
+        except ValueError:
+            return "❌ Первая часть должна быть числом"
 
 
 # ===== ЗАПУСК ИМИТАЦИИ БОТА =====
@@ -399,4 +392,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main()1
