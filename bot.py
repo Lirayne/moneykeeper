@@ -265,11 +265,12 @@ def handle_delete(args: List[str]):
 
 def handle_export():
     """
-    Экспорт данных в JSON
-    БАГ #9: Экспортирует всё подряд, без фильтрации
+    Экспорт данных в JSON с лимитом
     """
-    expenses = db.get_expenses(current_user_id)
-    
+    MAX_EXPORT_ITEMS = 500
+
+    expenses = db.get_expenses(current_user_id)[:MAX_EXPORT_ITEMS]
+
     export_data = {
         "user": db.users.get(current_user_id, {}),
         "expenses": [
@@ -282,14 +283,13 @@ def handle_export():
             }
             for e in expenses
         ],
-        "categories": db.get_categories(current_user_id)
+        "categories": db.get_categories(current_user_id),
+        "note": f"Export limited to {MAX_EXPORT_ITEMS} items"
     }
-    
-    json_str = json.dumps(export_data, indent=2, ensure_ascii=False, default=str)
-    
-    # Имитация файла
-    return f"📄 *Экспорт данных*\n\n```json\n{json_str[:1500]}\n```\n(первые 1500 символов)"
 
+    json_str = json.dumps(export_data, indent=2, ensure_ascii=False)
+
+    return f"📄 *Экспорт данных*\n\n```json\n{json_str}\n```"
 
 def handle_unknown(command: str):
     """Неизвестная команда"""
@@ -392,4 +392,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main()1
