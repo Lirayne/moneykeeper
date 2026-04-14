@@ -275,18 +275,15 @@ def handle_add_category(args: List[str]):
 
 
 def handle_delete(args: List[str]):
-    """
-    Удалить расход по ID
-    БАГ #10: Нет проверки, что ID существует
-    """
+    # Баг #10 ИСПРАВЛЕН
     if not args:
         return "❌ Укажи ID расхода: /delete <id>"
-    
+
     try:
         expense_id = int(args[0])
     except ValueError:
         return "❌ ID должен быть числом"
-    
+
     if db.delete_expense(expense_id, current_user_id):
         return f"✅ Расход #{expense_id} удалён"
     else:
