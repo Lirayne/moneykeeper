@@ -7,6 +7,7 @@ MoneyKeeper Bot - Имитация Telegram-бота для учёта личн�
 """
 
 import json
+import os
 import math
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
@@ -15,13 +16,38 @@ from collections import defaultdict
 # ===== ХРАНЕНИЕ ДАННЫХ В ПАМЯТИ (имитация БД) =====
 class InMemoryDB:
     """Имитация базы данных в памяти (без реальной БД)"""
-    
+
+    CATEGORIES_FILE = "categories.json"
+
     def __init__(self):
         self.users: Dict[int, dict] = {}
         self.expenses: List[dict] = []
-        self.categories: Dict[int, List[str]] = defaultdict(lambda: ["🍔 Еда", "🚕 Транспорт", "🎬 Развлечения"])
+        self.categories: Dict[int, List[str]] = self._load_categories()
         self.next_expense_id = 1
-    
+
+    def _load_categories(self) -> Dict[int, List[str]]:
+        """Загружает категории из файла"""
+        from collections import defaultdict
+
+        if os.path.exists(self.CATEGORIES_FILE):
+            try:
+                with open(self.CATEGORIES_FILE, "r", encoding="utf-8") as f:
+                    saved = json.load(f)
+                    return defaultdict(
+                        lambda: ["🍔 Еда", "🚕 Транспорт", "🎬 Развлечения"],
+                        {int(k): v for k, v in saved.items()}
+                    )
+            except (json.JSONDecodeError, ValueError):
+                pass
+
+        return defaultdict(lambda: ["🍔 Еда", "🚕 Транспорт", "🎬 Развлечения"])
+
+    def _save_categories(self) -> None:
+        """Сохраняет категории в файл"""
+        to_save = {str(k): v for k, v in self.categories.items()}
+        with open(self.CATEGORIES_FILE, "w", encoding="utf-8") as f:
+            json.dump(to_save, f, ensure_ascii=False, indent=2)
+
     def add_user(self, user_id: int, username: str, first_name: str) -> None:
         if user_id not in self.users:
             self.users[user_id] = {
@@ -29,7 +55,7 @@ class InMemoryDB:
                 "first_name": first_name,
                 "registered_at": datetime.now()
             }
-    
+
     def add_expense(self, user_id: int, amount: float, category: str, description: str = "") -> int:
         expense = {
             "id": self.next_expense_id,
@@ -42,29 +68,30 @@ class InMemoryDB:
         self.expenses.append(expense)
         self.next_expense_id += 1
         return expense["id"]
-    
+
     def get_expenses(self, user_id: int, start_date: datetime = None, end_date: datetime = None) -> List[dict]:
         result = [e for e in self.expenses if e["user_id"] == user_id]
-        
+
         if start_date:
             result = [e for e in result if e["date"] >= start_date]
         if end_date:
             result = [e for e in result if e["date"] <= end_date]
-        
+
         return sorted(result, key=lambda x: x["date"], reverse=True)
-    
+
     def delete_expense(self, expense_id: int, user_id: int) -> bool:
         for i, exp in enumerate(self.expenses):
             if exp["id"] == expense_id and exp["user_id"] == user_id:
                 self.expenses.pop(i)
                 return True
         return False
-    
+
     def add_category(self, user_id: int, category_name: str) -> None:
-        # БАГ #8: Категория добавляется, но при перезапуске теряется
+        # БАГ #8 ИСПРАВЛЕН: Категория сохраняется в файл
         if category_name not in self.categories[user_id]:
             self.categories[user_id].append(category_name)
-    
+            self._save_categories()
+
     def get_categories(self, user_id: int) -> List[str]:
         return self.categories[user_id]
 
